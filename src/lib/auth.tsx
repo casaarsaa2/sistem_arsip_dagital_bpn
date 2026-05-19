@@ -11,44 +11,43 @@ import {
   deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore';
-import { getFirebase } from './firebase';
+import { auth, db } from './firebase';
 import { User } from '../types';
+import { handleFirestoreError, OperationType } from './error-handler';
 
 export function useAuth() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    if (!auth || !db) {
+      setLoading(false);
+      return;
+    }
 
-    const initAuth = async () => {
-      const { auth, db } = await getFirebase();
-      if (!auth || !db) {
-        setLoading(false);
-        return;
-      }
-
-      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
           const userRef = doc(db, 'users', firebaseUser.uid);
           const userSnap = await getDoc(userRef);
 
           if (userSnap.exists()) {
             setCurrentUser({ ...userSnap.data(), uid: firebaseUser.uid } as User);
           } else {
-            // Check for pre-created profile by email
-            const sanitizedEmail = (firebaseUser.email || '').replace(/[^a-zA-Z0-9]/g, '_');
-            const preProfileRef = doc(db, 'users', sanitizedEmail);
+            // Check for pre-created profile by email or prefix
+            const emailPrefix = (firebaseUser.email || '').split('@')[0];
+            const sanitizedPrefix = emailPrefix.replace(/[^a-zA-Z0-9]/g, '_');
+            const preProfileRef = doc(db, 'users', sanitizedPrefix);
             const preProfileSnap = await getDoc(preProfileRef);
 
             if (preProfileSnap.exists()) {
               // Claim the profile: Copy it to UID document and delete temp document
-              const preData = preProfileSnap.data();
+              const { tempPassword, ...profileData } = preProfileSnap.data() as any;
               const newUser = {
-                ...preData,
+                ...profileData,
                 uid: firebaseUser.uid,
-                email: firebaseUser.email || preData.email,
-                displayName: firebaseUser.displayName || preData.displayName || 'User',
+                email: firebaseUser.email || profileData.email,
+                displayName: firebaseUser.displayName || profileData.displayName || 'User',
               } as User;
 
               await setDoc(userRef, {
@@ -59,7 +58,7 @@ export function useAuth() {
               setCurrentUser(newUser);
             } else {
               // Special Case for requested Super Admin
-              const isRequestAdmin = firebaseUser.email === 'admin@bpn.go.id';
+              const isRequestAdmin = firebaseUser.email === 'admin@bpn.go.id' || firebaseUser.email === 'admin';
               
               const newUser: User = {
                 uid: firebaseUser.uid,
@@ -77,25 +76,24 @@ export function useAuth() {
               setCurrentUser(newUser);
             }
           }
-        } else {
-          setCurrentUser(null);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, 'users');
         }
-        setLoading(false);
-      });
-    };
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
 
-    initAuth();
-    return () => unsubscribe?.();
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, pass: string) => {
-    const { auth } = await getFirebase();
     if (!auth) throw new Error("Firebase not initialized");
     return signInWithEmailAndPassword(auth, email, pass);
   };
 
   const logout = async () => {
-    const { auth } = await getFirebase();
     if (!auth) return;
     return signOut(auth);
   };

@@ -11,6 +11,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'password');
+    }
+
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -24,12 +28,12 @@ service cloud.firestore {
     }
 
     function getRole() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data.role : null;
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userPath) ? get(userPath).data.role : null;
     }
 
     function isRole(role) {
-      return getRole() == role;
+      return isSignedIn() && getRole() == role;
     }
 
     function isSuperAdmin() {
@@ -38,24 +42,26 @@ service cloud.firestore {
 
     function isAdmin() {
       let role = getRole();
-      return role == 'SUPER_ADMIN' || role == 'ADMIN';
+      return isSignedIn() && (role == 'SUPER_ADMIN' || role == 'ADMIN');
     }
 
-    function isPetugas() {
+    function isStaff() {
       let role = getRole();
-      return role != null && (role == 'SUPER_ADMIN' || role == 'ADMIN' || role == 'PETUGAS_ARSIP');
+      return isSignedIn() && (role == 'SUPER_ADMIN' || role == 'ADMIN' || role == 'PETUGAS_ARSIP');
     }
 
     // Archive Validation
     function isValidArchive(data) {
       return data.type in ['BUKU_TANAH', 'WARKAH', 'SURAT_UKUR'] &&
-             data.namaPemegangHak is string && data.namaPemegangHak.size() > 0;
+             data.namaPemegangHak is string && data.namaPemegangHak.size() > 0 &&
+             data.namaPemegangHak.size() <= 255;
     }
 
     match /archives/{archiveId} {
-      allow read: if isPetugas();
-      allow create: if isPetugas() && isValidArchive(incoming());
-      allow update: if isPetugas() && isValidArchive(incoming());
+      allow get: if isStaff();
+      allow list: if isStaff();
+      allow create: if isStaff() && isValidArchive(incoming());
+      allow update: if isStaff() && isValidArchive(incoming());
       allow delete: if isAdmin();
     }
 
@@ -66,20 +72,42 @@ service cloud.firestore {
     }
 
     match /loans/{loanId} {
-      allow read: if isPetugas();
-      allow create: if isPetugas() && isValidLoan(incoming());
-      allow update: if isPetugas() && isValidLoan(incoming());
+      allow get: if isStaff();
+      allow list: if isStaff();
+      allow create: if isStaff() && isValidLoan(incoming());
+      allow update: if isStaff() && isValidLoan(incoming());
       allow delete: if isAdmin();
     }
 
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isPetugas());
-      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == uid && (
-        incoming().role == 'PETUGAS_ARSIP' || 
-        (incoming().role == 'SUPER_ADMIN' && request.auth.token.email == 'admin@bpn.go.id')
-      ));
-      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == uid && (incoming().role == resource.data.role || (incoming().role == 'SUPER_ADMIN' && request.auth.token.email == 'admin@bpn.go.id')));
-      allow delete: if isAdmin() && resource.data.role != 'SUPER_ADMIN';
+      // Allow get if it's your own UID, or if the email matches (for claiming), or if you're staff
+      allow get: if isSignedIn() && (
+        request.auth.uid == uid || 
+        isStaff() || 
+        (resource != null && (resource.data.email == request.auth.token.email || resource.id == request.auth.uid))
+      );
+      
+      // Only staff can list all users
+      allow list: if isStaff();
+      
+      // Allow creation of your own profile
+      allow create: if isSignedIn() && (
+        isAdmin() || 
+        request.auth.uid == uid
+      );
+      
+      // Allow update of your own profile (except role, which only admins can change)
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (request.auth.uid == uid && incoming().role == resource.data.role)
+      );
+      
+      // Allow deletion of your own profile OR the pre-profile that matches your email
+      allow delete: if (
+        isAdmin() && resource.data.role != 'SUPER_ADMIN'
+      ) || (
+        isSignedIn() && (resource.data.email == request.auth.token.email || resource.id == request.auth.uid)
+      );
     }
 
     match /locations/{locationId} {

@@ -1,29 +1,15 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import config from '../../firebase-applet-config.json';
 
-let firebaseApp: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let db: Firestore | undefined;
+const firebaseApp = getApps().length === 0 ? initializeApp(config) : getApp();
+export const auth = getAuth(firebaseApp);
+export const db = getFirestore(firebaseApp, (config as any).firestoreDatabaseId || '(default)');
 
-// Export a function to ensure initialization and return the instances
+// Keep getFirebase for backward compatibility during transition if needed
 export async function getFirebase() {
-  if (auth && db) return { auth, db };
-
-  try {
-    firebaseApp = getApps().length === 0 ? initializeApp(config) : getApp();
-    auth = getAuth(firebaseApp);
-    db = getFirestore(firebaseApp, (config as any).firestoreDatabaseId || '(default)');
-    
-    return { auth, db };
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
-    return { auth: null, db: null };
-  }
+  return { auth, db };
 }
-
-// Still export the variables for immediate (but potentially undefined) access
-export { auth, db };
 
 

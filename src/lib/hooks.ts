@@ -11,25 +11,26 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import { getFirebase } from './firebase';
+import { auth, db } from './firebase';
 import { Archive, ArchiveType } from '../types';
+import { handleFirestoreError, OperationType } from './error-handler';
 
 export function useArchives(type?: ArchiveType) {
   const [archives, setArchives] = useState<Archive[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [archivesLoading, setArchivesLoading] = useState(true);
+  const [archivesError, setArchivesError] = useState<string | null>(null);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
     const initDocs = async () => {
-      const { db } = await getFirebase();
       if (!db) {
-        setLoading(false);
+        setArchivesLoading(false);
         return;
       }
 
-      const archiveRef = collection(db, 'archives');
+      const collectionPath = 'archives';
+      const archiveRef = collection(db, collectionPath);
       let q = query(archiveRef, orderBy('createdAt', 'desc'));
       
       if (type) {
@@ -43,12 +44,12 @@ export function useArchives(type?: ArchiveType) {
             ...doc.data()
           })) as Archive[];
           setArchives(items);
-          setLoading(false);
+          setArchivesLoading(false);
         },
         (err) => {
-          console.error("Firestore Error:", err);
-          setError(err.message);
-          setLoading(false);
+          handleFirestoreError(err, OperationType.LIST, collectionPath);
+          setArchivesError(err.message);
+          setArchivesLoading(false);
         }
       );
     };
@@ -58,33 +59,52 @@ export function useArchives(type?: ArchiveType) {
   }, [type]);
 
   const addArchive = async (data: any) => {
-    const { db, auth } = await getFirebase();
     if (!db) throw new Error("Database not initialized");
-    return addDoc(collection(db, 'archives'), {
-      ...data,
-      status: 'Available',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      createdBy: auth?.currentUser?.uid || 'anonymous'
-    });
+    const collectionPath = 'archives';
+    try {
+      return await addDoc(collection(db, collectionPath), {
+        ...data,
+        status: 'Available',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: auth?.currentUser?.uid || 'anonymous'
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, collectionPath);
+    }
   };
 
   const updateArchive = async (id: string, data: any) => {
-    const { db } = await getFirebase();
     if (!db) throw new Error("Database not initialized");
-    const arcRef = doc(db, 'archives', id);
-    return updateDoc(arcRef, {
-      ...data,
-      updatedAt: serverTimestamp()
-    });
+    const collectionPath = 'archives';
+    try {
+      const arcRef = doc(db, collectionPath, id);
+      return await updateDoc(arcRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `${collectionPath}/${id}`);
+    }
   };
 
   const removeArchive = async (id: string) => {
-    const { db } = await getFirebase();
     if (!db) throw new Error("Database not initialized");
-    const arcRef = doc(db, 'archives', id);
-    return deleteDoc(arcRef);
+    const collectionPath = 'archives';
+    try {
+      const arcRef = doc(db, collectionPath, id);
+      return await deleteDoc(arcRef);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `${collectionPath}/${id}`);
+    }
   };
 
-  return { archives, loading, error, addArchive, updateArchive, removeArchive };
+  return { 
+    archives, 
+    loading: archivesLoading, 
+    error: archivesError, 
+    addArchive, 
+    updateArchive, 
+    removeArchive 
+  };
 }

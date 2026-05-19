@@ -2,9 +2,12 @@ import * as React from "react";
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Database, Lock, User } from 'lucide-react';
+import { Database, Lock, User as UserIcon } from 'lucide-react';
 import { useAuth } from "@/src/lib/auth";
 import { toast } from "sonner";
+import { auth as firebaseAuth, db } from "@/src/lib/firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { getDoc, doc } from "firebase/firestore";
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,27 +17,16 @@ export function Login() {
   const [displayName, setDisplayName] = useState("");
   const { login } = useAuth();
   
-  // We need to import createUserWithEmailAndPassword for registration
-  // But our useAuth doesn't export it yet. 
-  // Let's just use it directly from firebase/auth for the registration part.
-  const { auth } = React.useMemo(() => {
-    // getFirebase is async, so we'll just handle it in the handleRegister
-    return { auth: null };
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     if (isRegistering) {
       try {
-        const { auth: firebaseAuth } = await (await import("@/src/lib/firebase")).getFirebase();
         if (!firebaseAuth) throw new Error("Firebase not ready");
         
-        const { createUserWithEmailAndPassword, updateProfile } = await import("firebase/auth");
-        
         // Map 'admin' to internal email
-        const finalEmail = email === 'admin' ? 'admin@bpn.go.id' : email;
+        const finalEmail = email === 'admin' ? 'admin@bpn.go.id' : (email.includes('@') ? email : `${email}@bpn.go.id`);
         const userCred = await createUserWithEmailAndPassword(firebaseAuth, finalEmail, password);
         
         if (displayName || email === 'admin') {
@@ -55,44 +47,13 @@ export function Login() {
     try {
       const finalEmail = email.includes('@') ? email : `${email}@bpn.go.id`;
       
-      try {
-        await login(finalEmail, password);
-        toast.success("Login berhasil");
-      } catch (authError: any) {
-        // If user not found, check if it's a pre-created profile
-        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
-          const { db, auth: firebaseAuth } = await (await import("@/src/lib/firebase")).getFirebase();
-          if (db && firebaseAuth) {
-            const { getDoc, doc } = await import('firebase/firestore');
-            const sanitizedId = email.replace(/[^a-zA-Z0-9]/g, '_');
-            const preProfileSnap = await getDoc(doc(db, 'users', sanitizedId));
-            
-            if (preProfileSnap.exists()) {
-              const preData = preProfileSnap.data();
-              // Verify temp password
-              if (preData.tempPassword === password) {
-                // Auto-register this user
-                const { createUserWithEmailAndPassword, updateProfile } = await import("firebase/auth");
-                const userCred = await createUserWithEmailAndPassword(firebaseAuth, finalEmail, password);
-                
-                if (preData.displayName) {
-                  await updateProfile(userCred.user, { displayName: preData.displayName });
-                }
-                
-                // The auth state listener in App.tsx will handle the rest (copying to UID doc)
-                toast.success("Akun diaktifkan. Selamat datang.");
-                return;
-              }
-            }
-          }
-        }
-        throw authError; // Re-throw if not a pre-profile match
-      }
+      await login(finalEmail, password);
+      toast.success("Login berhasil");
     } catch (error: any) {
       console.error(error);
       let message = "Otentikasi Gagal";
-      if (error.code === 'auth/invalid-credential') {
-        message = "Email atau password salah. Silahkan periksa kembali.";
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+        message = "Email atau password salah. Jika Anda pengguna baru, silahkan gunakan menu Daftar.";
       } else if (error.code === 'auth/user-disabled') {
         message = "Akun Anda telah dinonaktifkan. Silahkan hubungi admin.";
       } else if (error.code === 'auth/too-many-requests') {
@@ -136,7 +97,7 @@ export function Login() {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">Nama Lengkap</label>
                 <div className="relative">
-                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <UserIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <Input 
                     placeholder="NAMA LENGKAP" 
                     className="pl-9 h-11 bg-slate-50 border-slate-200 rounded text-xs focus:bg-white"
@@ -151,7 +112,7 @@ export function Login() {
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">ID Pengguna</label>
               <div className="relative">
-                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <UserIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input 
                   type="text"
                   placeholder="Masukkan ID Petugas..." 
@@ -185,6 +146,16 @@ export function Login() {
             >
               {isLoading ? "Memproses..." : isRegistering ? "Daftar Akun" : "Masuk Sistem"}
             </Button>
+            
+            <div className="text-center mt-4">
+              <button 
+                type="button"
+                onClick={() => setIsRegistering(!isRegistering)}
+                className="text-[10px] text-[#1e3a8a] hover:underline font-bold uppercase tracking-wider"
+              >
+                {isRegistering ? "Sudah punya akun? Masuk di sini" : "Pengguna baru? Daftar di sini"}
+              </button>
+            </div>
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
@@ -198,7 +169,7 @@ export function Login() {
           <div className="relative z-10">
              <div className="w-16 h-1 bg-white/20 mb-6 rounded-full"></div>
              <p className="text-white font-bold text-lg leading-snug tracking-tight mb-4 italic">
-                "Melayani dengan profesional, terpercaya, dan modern untuk kepastian hukum."
+                "Melayani dengan profesional, terpercaya, and modern untuk kepastian hukum."
              </p>
               <div className="flex items-center space-x-3 mt-6">
                  <img src="/Logo_BPN.png" alt="BPN Logo" className="w-8 h-8 object-contain" />

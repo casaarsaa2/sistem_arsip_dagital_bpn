@@ -24,6 +24,8 @@ import { JENIS_HAK, JENIS_KEGIATAN } from "@/src/constants";
 import { ArchiveType, Location } from "@/src/types";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
+import { db } from "../../lib/firebase";
+
 const archiveSchema = z.object({
   type: z.enum(["BUKU_TANAH", "WARKAH", "SURAT_UKUR"]),
   namaPemegangHak: z.string().min(1, "Nama pemegang hak wajib diisi"),
@@ -63,7 +65,6 @@ export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps)
   React.useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const { db } = await (await import("../../lib/firebase")).getFirebase();
         if (!db) return;
         const q = collection(db, "locations");
         const snap = await getDocs(q);
@@ -119,241 +120,241 @@ export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps)
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleInternalSubmit)} className="space-y-4">
-        {/* ... existing fields ... */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={form.handleSubmit(handleInternalSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CardSection title="Informasi Identitas">
-            <FormField
-              control={form.control}
-              name="namaPemegangHak"
-              render={({ field }) => (
-                <FormItem className="space-y-1">
-                  <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Nama Pemegang Hak</FormLabel>
-                  <FormControl>
-                    <Input placeholder="NAMA LENGKAP" {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs focus:bg-white" />
-                  </FormControl>
-                  <FormMessage className="text-[9px]" />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-6">
+              <FormField
+                control={form.control}
+                name="namaPemegangHak"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Nama Pemegang Hak</FormLabel>
+                    <FormControl>
+                      <Input placeholder="NAMA LENGKAP PADA SERTIFIKAT" {...field} className="h-12 rounded-xl bg-white border-slate-200 text-xs focus:ring-4 focus:ring-blue-50 transition-all font-bold placeholder:text-slate-300 shadow-sm" />
+                    </FormControl>
+                    <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                  </FormItem>
+                )}
+              />
 
-            {type === 'BUKU_TANAH' && (
-              <>
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <FormField
-                    control={form.control}
-                    name="noHak"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Nomor HAK</FormLabel>
-                        <FormControl>
-                          <Input placeholder="5004" {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs" />
-                        </FormControl>
-                        <FormMessage className="text-[9px]" />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="jenisHak"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Jenis HAK</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {type === 'BUKU_TANAH' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="noHak"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Nomor HAK</FormLabel>
                           <FormControl>
-                            <SelectTrigger className="h-9 rounded bg-slate-50 border-slate-200 text-xs shadow-none">
-                              <SelectValue placeholder="PILIH" />
-                            </SelectTrigger>
+                            <Input placeholder="5004" {...field} className="h-12 rounded-xl bg-white border-slate-200 text-xs font-bold shadow-sm" />
                           </FormControl>
-                          <SelectContent className="bg-white border-slate-200">
-                            {JENIS_HAK.map(h => (
-                              <SelectItem key={h} value={h} className="text-xs">{h}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-[9px]" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
+                          <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jenisHak"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Jenis HAK</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 text-xs shadow-sm font-bold">
+                                <SelectValue placeholder="PILIH" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-white border-slate-200 z-[100] rounded-xl shadow-2xl">
+                              {JENIS_HAK.map(h => (
+                                <SelectItem key={h} value={h} className="text-xs focus:bg-blue-50 font-semibold py-2">{h}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
-            {type === 'SURAT_UKUR' && (
-              <>
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <FormField
-                    control={form.control}
-                    name="noSU"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Nomor Surat Ukur (SU)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="12345" {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs" />
-                        </FormControl>
-                        <FormMessage className="text-[9px]" />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="tahunSU"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Tahun SU</FormLabel>
-                        <FormControl>
-                          <Input placeholder="2024" {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs" />
-                        </FormControl>
-                        <FormMessage className="text-[9px]" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
-
-            {type === 'WARKAH' && (
-              <>
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <FormField
-                    control={form.control}
-                    name="noDI208"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Nomor DI 208</FormLabel>
-                        <FormControl>
-                          <Input placeholder="101" {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs" />
-                        </FormControl>
-                        <FormMessage className="text-[9px]" />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="jenisKegiatan"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Jenis Kegiatan</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                {type === 'SURAT_UKUR' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="noSU"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Nomor SU</FormLabel>
                           <FormControl>
-                            <SelectTrigger className="h-9 rounded bg-slate-50 border-slate-200 text-xs shadow-none">
-                              <SelectValue placeholder="PILIH" />
-                            </SelectTrigger>
+                            <Input placeholder="12345" {...field} className="h-12 rounded-xl bg-white border-slate-200 text-xs font-bold shadow-sm" />
                           </FormControl>
-                          <SelectContent className="bg-white border-slate-200">
-                            {JENIS_KEGIATAN.map(k => (
-                              <SelectItem key={k} value={k} className="text-xs">{k}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-[9px]" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
+                          <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="tahunSU"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Tahun SU</FormLabel>
+                          <FormControl>
+                            <Input placeholder="YYYY" {...field} className="h-12 rounded-xl bg-white border-slate-200 text-xs font-bold shadow-sm" />
+                          </FormControl>
+                          <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                {type === 'WARKAH' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="noDI208"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">No. DI 208</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nomor DI" {...field} className="h-12 rounded-xl bg-white border-slate-200 text-xs font-bold shadow-sm" />
+                          </FormControl>
+                          <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jenisKegiatan"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Kegiatan</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 text-xs shadow-sm font-bold">
+                                <SelectValue placeholder="PILIH" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-white border-slate-200 z-[100] rounded-xl shadow-2xl">
+                              {JENIS_KEGIATAN.map(k => (
+                                <SelectItem key={k} value={k} className="text-xs focus:bg-blue-50 font-semibold py-2">{k}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
           </CardSection>
 
           <CardSection title="Lokasi Penyimpanan">
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="kecamatan"
-                render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Kecamatan</FormLabel>
-                    <Select onValueChange={(val) => {
-                      field.onChange(val);
-                      form.setValue("kelurahan", ""); // Reset kelurahan when kecamatan changes
-                    }} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="h-9 rounded bg-slate-50 border-slate-200 text-xs shadow-none">
-                          <SelectValue placeholder={loadingLocs ? "Memuat..." : "PILIH"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-white border-slate-200">
-                        {kecamatans.map(k => (
-                          <SelectItem key={k.id} value={k.id} className="text-xs">{k.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-[9px]" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="kelurahan"
-                render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Kelurahan/Desa</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedKecId}>
-                      <FormControl>
-                        <SelectTrigger className="h-9 rounded bg-slate-50 border-slate-200 text-xs shadow-none">
-                          <SelectValue placeholder={!selectedKecId ? "PILIH KEC. DULU" : "PILIH"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-white border-slate-200">
-                        {filteredKelurahans.map(k => (
-                          <SelectItem key={k.id} value={k.id} className="text-xs">{k.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-[9px]" />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="kecamatan"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Kecamatan</FormLabel>
+                      <Select onValueChange={(val) => {
+                        field.onChange(val);
+                        form.setValue("kelurahan", ""); 
+                      }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 text-xs shadow-sm font-bold">
+                            <SelectValue placeholder={loadingLocs ? "..." : "PILIH"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-white border-slate-200 z-[100] rounded-xl shadow-2xl">
+                          {kecamatans.map(k => (
+                            <SelectItem key={k.id} value={k.id} className="text-xs focus:bg-blue-50 font-semibold py-2">{k.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                    </FormItem>
+                  )}
+                />
 
-            <div className="grid grid-cols-3 gap-3 mt-3">
-              <FormField
-                control={form.control}
-                name="rak"
-                render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Rak</FormLabel>
-                    <FormControl>
-                      <Input {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs uppercase" />
-                    </FormControl>
-                    <FormMessage className="text-[9px]" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shaft"
-                render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Shaft</FormLabel>
-                    <FormControl>
-                      <Input {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs uppercase" />
-                    </FormControl>
-                    <FormMessage className="text-[9px]" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="boks"
-                render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] font-bold uppercase text-slate-500">
-                      {type === 'BUKU_TANAH' ? 'Bundel' : type === 'SURAT_UKUR' ? 'Bundel' : 'Boks'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs uppercase" />
-                    </FormControl>
-                    <FormMessage className="text-[9px]" />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="kelurahan"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Kelurahan/Desa</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!selectedKecId}>
+                        <FormControl>
+                          <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 text-xs shadow-sm font-bold">
+                            <SelectValue placeholder="PILIH" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-white border-slate-200 z-[100] rounded-xl shadow-2xl">
+                          {filteredKelurahans.map(k => (
+                            <SelectItem key={k.id} value={k.id} className="text-xs focus:bg-blue-50 font-semibold py-2">{k.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-[9px] font-medium text-red-500 ml-1" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="rak"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] text-center">Rak</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="A" className="h-12 rounded-xl bg-white border-slate-200 text-xs uppercase font-black text-center focus:ring-4 focus:ring-blue-50 transition-all shadow-sm" />
+                      </FormControl>
+                      <FormMessage className="text-[9px] font-medium text-red-500 text-center" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="shaft"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] text-center">Shaft</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="1" className="h-12 rounded-xl bg-white border-slate-200 text-xs uppercase font-black text-center focus:ring-4 focus:ring-blue-50 transition-all shadow-sm" />
+                      </FormControl>
+                      <FormMessage className="text-[9px] font-medium text-red-500 text-center" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="boks"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] text-center">
+                        {type === 'WARKAH' ? 'Boks' : 'Bundel'}
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="01" className="h-12 rounded-xl bg-white border-slate-200 text-xs uppercase font-black text-center focus:ring-4 focus:ring-blue-50 transition-all shadow-sm" />
+                      </FormControl>
+                      <FormMessage className="text-[9px] font-medium text-red-500 text-center" />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </CardSection>
         </div>
 
-        <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
-           <Button type="submit" className="bg-[#1e3a8a] hover:bg-[#1e40af] px-8 rounded text-[10px] font-bold uppercase tracking-widest text-white transition-colors h-10 shadow-lg shadow-blue-900/20">
+        <div className="flex justify-end pt-6 border-t border-slate-100">
+           <Button type="submit" className="bg-[#1e3a8a] hover:bg-[#1e40af] px-12 rounded-xl text-xs font-bold uppercase tracking-[0.3em] text-white transition-all h-14 shadow-2xl shadow-blue-900/30 active:scale-95">
               Simpan Data Berkas
            </Button>
         </div>
@@ -364,9 +365,9 @@ export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps)
 
 function CardSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-slate-200 rounded p-4 shadow-sm">
-      <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 border-b border-slate-50 pb-2">{title}</h3>
-      <div className="space-y-3">
+    <div className="bg-white border border-slate-100 rounded-[24px] p-6 sm:p-8 shadow-sm ring-1 ring-slate-50">
+      <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] mb-8 inline-block border-b-2 border-blue-600 pb-2">{title}</h3>
+      <div>
         {children}
       </div>
     </div>

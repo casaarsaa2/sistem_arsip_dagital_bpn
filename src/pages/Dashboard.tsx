@@ -28,74 +28,74 @@ export function Dashboard() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <Card className="border-slate-200 shadow-xs rounded p-3 bg-white flex flex-col justify-between h-24 transition-all hover:bg-slate-50">
+        <Card className="border-slate-200 shadow-xs rounded p-4 bg-white flex flex-col justify-between h-28 transition-all hover:bg-slate-50">
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Buku Tanah</p>
-            <h3 className="text-xl font-bold text-slate-900 leading-none">12,450</h3>
+            <h3 className="text-2xl font-bold text-slate-900 leading-none">12,450</h3>
           </div>
           <div className="flex items-center justify-between mt-auto">
             <span className="text-[10px] text-emerald-600 font-bold flex items-center">
               <ArrowUpRight size={12} className="mr-0.5" /> +12%
             </span>
-            <BookText size={16} className="text-blue-600 opacity-20" />
+            <BookText size={18} className="text-blue-600 opacity-20" />
           </div>
         </Card>
 
-        <Card className="border-slate-200 shadow-xs rounded p-3 bg-white flex flex-col justify-between h-24 transition-all hover:bg-slate-50">
+        <Card className="border-slate-200 shadow-xs rounded p-4 bg-white flex flex-col justify-between h-28 transition-all hover:bg-slate-50">
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Surat Ukur</p>
-            <h3 className="text-xl font-bold text-slate-900 leading-none">5,630</h3>
+            <h3 className="text-2xl font-bold text-slate-900 leading-none">5,630</h3>
           </div>
           <div className="flex items-center justify-between mt-auto">
             <span className="text-[10px] text-emerald-600 font-bold flex items-center">
               <ArrowUpRight size={12} className="mr-0.5" /> +8.1%
             </span>
-            <Map size={16} className="text-blue-500 opacity-20" />
+            <Map size={18} className="text-blue-500 opacity-20" />
           </div>
         </Card>
 
-        <Card className="border-slate-200 shadow-xs rounded p-3 bg-white flex flex-col justify-between h-24 transition-all hover:bg-slate-50">
+        <Card className="border-slate-200 shadow-xs rounded p-4 bg-white flex flex-col justify-between h-28 transition-all hover:bg-slate-50">
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Warkah</p>
-            <h3 className="text-xl font-bold text-slate-900 leading-none">8,920</h3>
+            <h3 className="text-2xl font-bold text-slate-900 leading-none">8,920</h3>
           </div>
           <div className="flex items-center justify-between mt-auto">
             <span className="text-[10px] text-emerald-600 font-bold flex items-center">
               <ArrowUpRight size={12} className="mr-0.5" /> +5.4%
             </span>
-            <Files size={16} className="text-emerald-600 opacity-20" />
+            <Files size={18} className="text-emerald-600 opacity-20" />
           </div>
         </Card>
 
-        <Card className="border-slate-200 shadow-xs rounded p-3 bg-white flex flex-col justify-between h-24 transition-all hover:bg-slate-50">
+        <Card className="border-slate-200 shadow-xs rounded p-4 bg-white flex flex-col justify-between h-28 transition-all hover:bg-slate-50">
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Peminjaman</p>
-            <h3 className="text-xl font-bold text-slate-900 leading-none">42</h3>
+            <h3 className="text-2xl font-bold text-slate-900 leading-none">42</h3>
           </div>
           <div className="mt-auto">
-             <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div className="bg-amber-500 h-full w-[15%]"></div>
              </div>
-             <p className="text-[8px] text-slate-400 mt-1 uppercase font-bold">Berkas Aktif</p>
+             <p className="text-[9px] text-slate-400 mt-1.5 uppercase font-bold">Berkas Aktif</p>
           </div>
         </Card>
 
-        <Card className="border-slate-200 shadow-xs rounded p-3 bg-white flex flex-col justify-between h-24 transition-all hover:bg-slate-50">
+        <Card className="border-slate-200 shadow-xs rounded p-4 bg-white flex flex-col justify-between h-28 transition-all hover:bg-slate-50">
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Input Hari Ini</p>
-            <h3 className="text-xl font-bold text-slate-900 leading-none">128</h3>
+            <h3 className="text-2xl font-bold text-slate-900 leading-none">128</h3>
           </div>
-          <div className="text-[10px] text-blue-600 font-bold underline cursor-pointer mt-auto">Lihat Rincian</div>
+          <div className="text-[11px] text-blue-600 font-bold underline cursor-pointer mt-auto">Lihat Rincian</div>
         </Card>
 
-        <Card className="border-slate-200 shadow-xs rounded p-3 bg-white flex flex-col justify-between h-24 transition-all hover:bg-slate-50">
+        <Card className="border-slate-200 shadow-xs rounded p-4 bg-white flex flex-col justify-between h-28 transition-all hover:bg-slate-50">
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Uptime Sistem</p>
-            <h3 className="text-xl font-bold text-slate-900 leading-none">99.9%</h3>
+            <h3 className="text-2xl font-bold text-slate-900 leading-none">99.9%</h3>
           </div>
           <div className="flex items-center mt-auto">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
-            <span className="text-[9px] text-slate-400 font-bold uppercase">Optimal</span>
+            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase">Optimal</span>
           </div>
         </Card>
       </div>
@@ -109,28 +109,29 @@ export function Dashboard() {
                <button className="text-[9px] font-bold uppercase px-2 py-1 text-slate-400 hover:text-slate-600">30 Hari</button>
             </div>
           </div>
-          <CardContent className="h-64 p-4">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={data}>
+          <CardContent className="h-72 p-4 pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{fontSize: 10, fill: '#64748b', fontWeight: 500}} 
-                  dy={5}
+                  tick={{fontSize: 10, fill: '#64748b', fontWeight: 600}} 
+                  dy={10}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{fontSize: 10, fill: '#64748b', fontWeight: 500}} 
+                  tick={{fontSize: 10, fill: '#64748b', fontWeight: 600}} 
                 />
                 <Tooltip 
-                  contentStyle={{fontSize: '11px', borderRadius: '4px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                  cursor={{fill: '#f8fafc'}}
+                  contentStyle={{fontSize: '11px', borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'}}
                 />
-                <Bar dataKey="buku" fill="#1e3a8a" radius={[2, 2, 0, 0]} barSize={15} />
-                <Bar dataKey="suratUkur" fill="#3b82f6" radius={[2, 2, 0, 0]} barSize={15} />
-                <Bar dataKey="warkah" fill="#10b981" radius={[2, 2, 0, 0]} barSize={15} />
+                <Bar dataKey="buku" fill="#1e3a8a" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="suratUkur" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="warkah" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

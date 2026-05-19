@@ -264,21 +264,23 @@ export function ArchiveList({ type }: ArchiveListProps) {
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden sm:rounded-[32px] border-none shadow-2xl h-[100dvh] sm:h-auto overflow-y-auto">
-          <div className="bg-white p-4 sm:p-8">
-            <DialogHeader className="mb-4 sm:mb-6">
-              <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-800">
-                {editingArchive ? "Perbarui Arsip" : "Tambah Arsip Baru"}
+        <DialogContent className="max-w-[1200px] w-[95vw] p-0 overflow-hidden sm:rounded-[40px] border-none shadow-2xl bg-white focus:outline-none">
+          <div className="bg-white p-6 sm:p-8 max-h-[95dvh] overflow-y-auto custom-scrollbar">
+            <DialogHeader className="mb-6">
+              <DialogTitle className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                {editingArchive ? "Perbarui Data Arsip" : "Tambah Arsip Baru"}
               </DialogTitle>
-              <p className="text-slate-500 text-xs sm:text-sm">
-                Lengkapi formulir di bawah ini untuk menyimpan data {type === 'BUKU_TANAH' ? 'Buku Tanah' : type === 'SURAT_UKUR' ? 'Surat Ukur' : 'Warkah'}.
+              <p className="text-slate-500 text-xs sm:text-sm font-medium mt-1">
+                Silakan lengkapi informasi formulir di bawah ini dengan benar untuk manajemen arsip digital Kantor Pertanahan.
               </p>
             </DialogHeader>
-            <ArchiveForm 
-              type={type} 
-              onSubmit={handleSubmit} 
-              initialValues={editingArchive ? (editingArchive as any) : undefined} 
-            />
+            <div className="mt-2">
+              <ArchiveForm 
+                type={type} 
+                onSubmit={handleSubmit} 
+                initialValues={editingArchive ? (editingArchive as any) : undefined} 
+              />
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -42,6 +42,8 @@ import { MoreVertical, UserPlus, Shield, User as UserIcon, Trash2, CheckCircle2,
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/src/lib/utils";
+import { auth, db } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/error-handler';
 import { useAuth } from '../lib/auth';
 
 export function UserManagement() {
@@ -62,19 +64,22 @@ export function UserManagement() {
     let unsubscribe: (() => void) | undefined;
 
     const initUsers = async () => {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
+      const collectionPath = 'users';
       if (!db) {
         setLoading(false);
         return;
       }
       
-      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      const q = query(collection(db, collectionPath), orderBy('createdAt', 'desc'));
       unsubscribe = onSnapshot(q, (snapshot) => {
         const userList = snapshot.docs.map(doc => ({
           ...doc.data(),
           uid: doc.id
         })) as User[];
         setUsers(userList);
+        setLoading(false);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.LIST, collectionPath);
         setLoading(false);
       });
     };
@@ -116,7 +121,6 @@ export function UserManagement() {
     }
 
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
 
       if (editingUser) {
@@ -127,16 +131,13 @@ export function UserManagement() {
         });
         toast.success("Profil pengguna diperbarui");
       } else {
-        // Create skeleton profile with temporary password
-        // Note: In this simulation, we store the password in the pre-profile 
-        // so the system can verify it later if we want custom login, 
-        // but for now we'll just store it so the admin knows what it is.
+        // Create skeleton profile with temporary password for first-time login
         const tempUid = formData.email.replace(/[^a-zA-Z0-9]/g, '_');
         await setDoc(doc(db, 'users', tempUid), {
           displayName: formData.displayName,
           email: formData.email,
           role: formData.role,
-          tempPassword: formData.password, // Only used for simulation/reference
+          tempPassword: formData.password, 
           isActive: true,
           createdAt: serverTimestamp(),
         });
@@ -150,7 +151,6 @@ export function UserManagement() {
 
   const handleUpdateRole = async (uid: string, newRole: UserRole) => {
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
       await updateDoc(doc(db, 'users', uid), {
         role: newRole
@@ -163,7 +163,6 @@ export function UserManagement() {
 
   const toggleActiveStatus = async (uid: string, currentStatus: boolean) => {
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
       await updateDoc(doc(db, 'users', uid), {
         isActive: !currentStatus
@@ -188,7 +187,6 @@ export function UserManagement() {
     if (!window.confirm(`PERINGATAN KRITIS: Menghapus pengguna ${userToDelete.displayName} akan mencabut semua hak aksesnya ke sistem secara permanen. Lanjutkan?`)) return;
 
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
       await deleteDoc(doc(db, 'users', userToDelete.uid));
       toast.success("Pengguna dihapus");

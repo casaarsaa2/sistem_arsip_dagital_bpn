@@ -32,7 +32,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Edit, MapPin, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from "@/src/lib/utils";
+import { db } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/error-handler';
 
 const INITIAL_LOCATIONS = [
   { 
@@ -72,14 +73,17 @@ export function LocationManagement() {
     let unsubscribe: () => void;
     
     const init = async () => {
+      const collectionPath = 'locations';
       try {
-        const { db } = await (await import('../lib/firebase')).getFirebase();
         if (!db) return;
 
-        const q = collection(db, 'locations');
+        const q = collection(db, collectionPath);
         unsubscribe = onSnapshot(q, (snapshot) => {
           const locs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
           setLocations(locs);
+          setLoading(false);
+        }, (err) => {
+          handleFirestoreError(err, OperationType.LIST, collectionPath);
           setLoading(false);
         });
       } catch (error) {
@@ -96,7 +100,6 @@ export function LocationManagement() {
     if (!window.confirm("Ini akan menambahkan daftar wilayah default. Data yang sudah ada tidak akan dihapus. Lanjutkan?")) return;
     
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
 
       const batch = writeBatch(db);
@@ -152,7 +155,6 @@ export function LocationManagement() {
     if (formData.type === 'KELURAHAN' && !formData.parentId) return toast.error("Kecamatan wajib dipilih untuk Kelurahan");
 
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
 
       const id = editingLocation?.id || formData.name.toLowerCase().replace(/\s+/g, '-');
@@ -173,7 +175,6 @@ export function LocationManagement() {
     if (!window.confirm(`Hapus wilayah ${name}?`)) return;
 
     try {
-      const { db } = await (await import('../lib/firebase')).getFirebase();
       if (!db) return;
 
       await deleteDoc(doc(db, 'locations', id));
@@ -288,64 +289,65 @@ export function LocationManagement() {
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-          <div className="bg-[#1e3a8a] px-6 py-4">
+        <DialogContent className="max-w-xl w-[95vw] rounded-[40px] border-none shadow-2xl p-0 overflow-hidden bg-white z-[100] focus:outline-none">
+          <div className="bg-[#1e3a8a] px-10 py-8">
             <DialogHeader>
-              <DialogTitle className="text-white font-bold">{editingLocation ? "Edit Wilayah" : "Tambah Wilayah Baru"}</DialogTitle>
+              <DialogTitle className="text-white text-2xl font-bold tracking-tight">{editingLocation ? "Edit Wilayah" : "Tambah Wilayah Baru"}</DialogTitle>
+              <p className="text-blue-100/70 text-xs font-medium mt-1 uppercase tracking-widest">Manajemen Struktur Wilayah</p>
             </DialogHeader>
           </div>
-          <div className="p-6 space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Jenis Wilayah</Label>
+          <div className="p-10 space-y-8 bg-white">
+            <div className="space-y-3">
+              <Label className="text-[11px] font-bold uppercase text-slate-400 tracking-widest pl-1">Jenis Wilayah</Label>
               <Select 
                 value={formData.type} 
                 onValueChange={(val: any) => setFormData({...formData, type: val})}
                 disabled={!!editingLocation}
               >
-                <SelectTrigger className="h-10 rounded border-slate-200">
+                <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-sm shadow-none focus:ring-4 focus:ring-blue-50 transition-all">
                   <SelectValue placeholder="Pilih Jenis" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="KECAMATAN">Kecamatan</SelectItem>
-                  <SelectItem value="KELURAHAN">Kelurahan</SelectItem>
+                <SelectContent className="bg-white border-slate-200 z-[110] rounded-2xl shadow-2xl">
+                  <SelectItem value="KECAMATAN" className="focus:bg-blue-50 py-3 font-semibold text-slate-700">Kecamatan</SelectItem>
+                  <SelectItem value="KELURAHAN" className="focus:bg-blue-50 py-3 font-semibold text-slate-700">Kelurahan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Nama Wilayah</Label>
+            <div className="space-y-3">
+              <Label className="text-[11px] font-bold uppercase text-slate-400 tracking-widest pl-1">Nama Wilayah</Label>
               <Input 
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
                 placeholder="Masukkan nama..."
-                className="h-10 rounded border-slate-200"
+                className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-sm focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
               />
             </div>
 
             {formData.type === 'KELURAHAN' && (
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Induk Kecamatan</Label>
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold uppercase text-slate-400 tracking-widest pl-1">Induk Kecamatan</Label>
                 <Select 
                   value={formData.parentId} 
                   onValueChange={(val) => setFormData({...formData, parentId: val})}
                 >
-                  <SelectTrigger className="h-10 rounded border-slate-200">
+                  <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-sm shadow-none focus:ring-4 focus:ring-blue-50 transition-all">
                     <SelectValue placeholder="Pilih Kecamatan" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-slate-200 z-[110] rounded-2xl shadow-2xl">
                     {kecamatans.map(k => (
-                      <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                      <SelectItem key={k.id} value={k.id} className="focus:bg-blue-50 py-3 font-semibold text-slate-700">{k.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
           </div>
-          <DialogFooter className="p-6 pt-0">
-            <Button variant="ghost" onClick={() => setIsFormOpen(false)} className="rounded text-[10px] font-bold uppercase tracking-widest h-10 px-6">Batal</Button>
+          <DialogFooter className="p-10 pt-0 bg-white flex sm:justify-between items-center">
+            <Button variant="ghost" onClick={() => setIsFormOpen(false)} className="rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] h-12 px-8 hover:bg-slate-50 text-slate-400 hover:text-slate-600">Batal</Button>
             <Button 
               onClick={handleSaveLocation}
-              className="bg-[#1e3a8a] hover:bg-[#1e40af] text-white rounded text-[10px] font-bold uppercase tracking-widest h-10 px-6"
+              className="bg-[#1e3a8a] hover:bg-[#1e40af] text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] h-12 px-12 shadow-xl shadow-blue-900/20 transition-all active:scale-95"
             >
               Simpan Wilayah
             </Button>
