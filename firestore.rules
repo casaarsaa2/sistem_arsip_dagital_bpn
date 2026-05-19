@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function getRole() {
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data.role : null;
+    }
+
+    function isRole(role) {
+      return getRole() == role;
+    }
+
+    function isSuperAdmin() {
+      return isRole('SUPER_ADMIN');
+    }
+
+    function isAdmin() {
+      let role = getRole();
+      return role == 'SUPER_ADMIN' || role == 'ADMIN';
+    }
+
+    function isPetugas() {
+      let role = getRole();
+      return role != null && (role == 'SUPER_ADMIN' || role == 'ADMIN' || role == 'PETUGAS_ARSIP');
+    }
+
+    // Archive Validation
+    function isValidArchive(data) {
+      return data.type in ['BUKU_TANAH', 'WARKAH', 'SURAT_UKUR'] &&
+             data.namaPemegangHak is string && data.namaPemegangHak.size() > 0;
+    }
+
+    match /archives/{archiveId} {
+      allow read: if isPetugas();
+      allow create: if isPetugas() && isValidArchive(incoming());
+      allow update: if isPetugas() && isValidArchive(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Loan Validation
+    function isValidLoan(data) {
+      return data.archiveId is string && data.borrowerName is string &&
+             data.status in ['Active', 'Returned'];
+    }
+
+    match /loans/{loanId} {
+      allow read: if isPetugas();
+      allow create: if isPetugas() && isValidLoan(incoming());
+      allow update: if isPetugas() && isValidLoan(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isPetugas());
+      allow create: if isSignedIn() && request.auth.uid == uid && (
+        incoming().role == 'PETUGAS_ARSIP' || 
+        (incoming().role == 'SUPER_ADMIN' && request.auth.token.email == 'admin@bpn.go.id')
+      );
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == uid && (incoming().role == resource.data.role || (incoming().role == 'SUPER_ADMIN' && request.auth.token.email == 'admin@bpn.go.id')));
+      allow delete: if isAdmin() && resource.data.role != 'SUPER_ADMIN';
+    }
+  }
+}
