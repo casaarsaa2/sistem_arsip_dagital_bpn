@@ -8,6 +8,7 @@ import {
   doc, 
   getDoc, 
   setDoc, 
+  deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore';
 import { getFirebase } from './firebase';
@@ -35,23 +36,46 @@ export function useAuth() {
           if (userSnap.exists()) {
             setCurrentUser({ ...userSnap.data(), uid: firebaseUser.uid } as User);
           } else {
-            // Special Case for requested Super Admin
-            const isRequestAdmin = firebaseUser.email === 'admin@bpn.go.id';
-            
-            const newUser: User = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || (isRequestAdmin ? 'Super Admin' : 'User'),
-              role: isRequestAdmin ? 'SUPER_ADMIN' : 'PETUGAS_ARSIP',
-              isActive: true,
-              createdAt: new Date().toISOString(),
-            };
-            
-            await setDoc(userRef, {
-              ...newUser,
-              createdAt: serverTimestamp(),
-            });
-            setCurrentUser(newUser);
+            // Check for pre-created profile by email
+            const sanitizedEmail = (firebaseUser.email || '').replace(/[^a-zA-Z0-9]/g, '_');
+            const preProfileRef = doc(db, 'users', sanitizedEmail);
+            const preProfileSnap = await getDoc(preProfileRef);
+
+            if (preProfileSnap.exists()) {
+              // Claim the profile: Copy it to UID document and delete temp document
+              const preData = preProfileSnap.data();
+              const newUser = {
+                ...preData,
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || preData.email,
+                displayName: firebaseUser.displayName || preData.displayName || 'User',
+              } as User;
+
+              await setDoc(userRef, {
+                ...newUser,
+                updatedAt: serverTimestamp(),
+              });
+              await deleteDoc(preProfileRef);
+              setCurrentUser(newUser);
+            } else {
+              // Special Case for requested Super Admin
+              const isRequestAdmin = firebaseUser.email === 'admin@bpn.go.id';
+              
+              const newUser: User = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || (isRequestAdmin ? 'Super Admin' : 'User'),
+                role: isRequestAdmin ? 'SUPER_ADMIN' : 'PETUGAS_ARSIP',
+                isActive: true,
+                createdAt: new Date().toISOString(),
+              };
+              
+              await setDoc(userRef, {
+                ...newUser,
+                createdAt: serverTimestamp(),
+              });
+              setCurrentUser(newUser);
+            }
           }
         } else {
           setCurrentUser(null);

@@ -20,14 +20,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DISTRICTS, JENIS_HAK, JENIS_KEGIATAN } from "@/src/constants";
-import { ArchiveType } from "@/src/types";
+import { JENIS_HAK, JENIS_KEGIATAN } from "@/src/constants";
+import { ArchiveType, Location } from "@/src/types";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 const archiveSchema = z.object({
   type: z.enum(["BUKU_TANAH", "WARKAH", "SURAT_UKUR"]),
   namaPemegangHak: z.string().min(1, "Nama pemegang hak wajib diisi"),
   kecamatan: z.string().min(1, "Kecamatan wajib dipilih"),
-  kelurahan: z.string().min(1, "Kelurahan wajib diisi"),
+  kelurahan: z.string().min(1, "Kelurahan wajib dipilih"),
   rak: z.string().min(1, "Nomor rak wajib diisi"),
   shaft: z.string().min(1, "Nomor shaft wajib diisi"),
   boks: z.string().optional(),
@@ -56,6 +57,36 @@ interface ArchiveFormProps {
 }
 
 export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps) {
+  const [locations, setLocations] = React.useState<Location[]>([]);
+  const [loadingLocs, setLoadingLocs] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const { db } = await (await import("../../lib/firebase")).getFirebase();
+        if (!db) return;
+        const q = collection(db, "locations");
+        const snap = await getDocs(q);
+        const locs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
+        setLocations(locs);
+
+        // If editing, map names back to IDs for the dropdowns
+        if (initialValues?.kecamatan || initialValues?.kelurahan) {
+          const kecId = locs.find(l => l.name === initialValues.kecamatan && l.type === 'KECAMATAN')?.id;
+          const kelId = locs.find(l => l.name === initialValues.kelurahan && l.type === 'KELURAHAN')?.id;
+          
+          if (kecId) form.setValue('kecamatan', kecId);
+          if (kelId) form.setValue('kelurahan', kelId);
+        }
+      } catch (err) {
+        console.error("Failed to fetch locations", err);
+      } finally {
+        setLoadingLocs(false);
+      }
+    };
+    fetchLocations();
+  }, [initialValues]);
+
   const form = useForm<ArchiveFormValues>({
     resolver: zodResolver(archiveSchema),
     defaultValues: {
@@ -69,9 +100,27 @@ export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps)
     },
   });
 
+  const selectedKecId = form.watch("kecamatan");
+  const filteredKelurahans = locations.filter(l => l.type === 'KELURAHAN' && l.parentId === selectedKecId);
+  const kecamatans = locations.filter(l => l.type === 'KECAMATAN');
+
+  // Handle submit to replace IDs with names if we want to store names (easier for display in tables)
+  // Or just store IDs. Let's store Names for simple display in ArchiveList.
+  const handleInternalSubmit = (values: ArchiveFormValues) => {
+    const kecName = locations.find(l => l.id === values.kecamatan)?.name || values.kecamatan;
+    const kelName = locations.find(l => l.id === values.kelurahan)?.name || values.kelurahan;
+    
+    onSubmit({
+      ...values,
+      kecamatan: kecName,
+      kelurahan: kelName
+    });
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleInternalSubmit)} className="space-y-4">
+        {/* ... existing fields ... */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CardSection title="Informasi Identitas">
             <FormField
@@ -214,15 +263,18 @@ export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps)
                 render={({ field }) => (
                   <FormItem className="space-y-1">
                     <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Kecamatan</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(val) => {
+                      field.onChange(val);
+                      form.setValue("kelurahan", ""); // Reset kelurahan when kecamatan changes
+                    }} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-9 rounded bg-slate-50 border-slate-200 text-xs shadow-none">
-                          <SelectValue placeholder="PILIH" />
+                          <SelectValue placeholder={loadingLocs ? "Memuat..." : "PILIH"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-white border-slate-200">
-                        {DISTRICTS.map(d => (
-                          <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
+                        {kecamatans.map(k => (
+                          <SelectItem key={k.id} value={k.id} className="text-xs">{k.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -236,9 +288,18 @@ export function ArchiveForm({ onSubmit, initialValues, type }: ArchiveFormProps)
                 render={({ field }) => (
                   <FormItem className="space-y-1">
                     <FormLabel className="text-[10px] font-bold uppercase text-slate-500">Kelurahan/Desa</FormLabel>
-                    <FormControl>
-                      <Input placeholder="KELURAHAN" {...field} className="h-9 rounded bg-slate-50 border-slate-200 text-xs focus:bg-white" />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedKecId}>
+                      <FormControl>
+                        <SelectTrigger className="h-9 rounded bg-slate-50 border-slate-200 text-xs shadow-none">
+                          <SelectValue placeholder={!selectedKecId ? "PILIH KEC. DULU" : "PILIH"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white border-slate-200">
+                        {filteredKelurahans.map(k => (
+                          <SelectItem key={k.id} value={k.id} className="text-xs">{k.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-[9px]" />
                   </FormItem>
                 )}

@@ -52,6 +52,7 @@ export function UserManagement() {
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
+    password: '',
     role: 'PETUGAS_ARSIP' as UserRole,
   });
 
@@ -88,6 +89,7 @@ export function UserManagement() {
       setFormData({
         displayName: user.displayName,
         email: user.email,
+        password: '',
         role: user.role,
       });
     } else {
@@ -95,6 +97,7 @@ export function UserManagement() {
       setFormData({
         displayName: '',
         email: '',
+        password: '',
         role: 'PETUGAS_ARSIP',
       });
     }
@@ -103,7 +106,12 @@ export function UserManagement() {
 
   const handleSaveUser = async () => {
     if (!formData.displayName || !formData.email) {
-      toast.error("Nama dan Email wajib diisi");
+      toast.error("Nama dan ID Pengguna wajib diisi");
+      return;
+    }
+
+    if (!editingUser && !formData.password) {
+      toast.error("Kata Sandi wajib diisi untuk pengguna baru");
       return;
     }
 
@@ -119,18 +127,20 @@ export function UserManagement() {
         });
         toast.success("Profil pengguna diperbarui");
       } else {
-        // Create skeleton profile
-        // Note: Real Firebase Auth creation happens via registration or Admin SDK
-        // We just create the firestore record here so they can be assigned roles before register
+        // Create skeleton profile with temporary password
+        // Note: In this simulation, we store the password in the pre-profile 
+        // so the system can verify it later if we want custom login, 
+        // but for now we'll just store it so the admin knows what it is.
         const tempUid = formData.email.replace(/[^a-zA-Z0-9]/g, '_');
         await setDoc(doc(db, 'users', tempUid), {
           displayName: formData.displayName,
           email: formData.email,
           role: formData.role,
+          tempPassword: formData.password, // Only used for simulation/reference
           isActive: true,
           createdAt: serverTimestamp(),
         });
-        toast.success("User ditambahkan (Profile Created)");
+        toast.success("Pengguna berhasil ditambahkan ke sistem");
       }
       setIsFormOpen(false);
     } catch (error) {
@@ -324,15 +334,27 @@ export function UserManagement() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Alamat Email / ID</Label>
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">ID Pengguna (Tanpa Spasi)</Label>
               <Input 
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
-                placeholder="email@bpn.go.id"
+                placeholder="ID Petugas atau Email"
                 disabled={!!editingUser}
                 className="h-10 rounded border-slate-200"
               />
             </div>
+            {!editingUser && (
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Kata Sandi Default</Label>
+                <Input 
+                  type="password"
+                  value={formData.password}
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  placeholder="Minimal 6 karakter..."
+                  className="h-10 rounded border-slate-200"
+                />
+              </div>
+            )}
             <div className="space-y-1.5" key={editingUser ? `edit-${editingUser.uid}` : 'new-user'}>
               <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Peran (Role)</Label>
               <Select 

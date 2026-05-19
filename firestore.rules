@@ -74,12 +74,17 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isPetugas());
-      allow create: if isSignedIn() && request.auth.uid == uid && (
+      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == uid && (
         incoming().role == 'PETUGAS_ARSIP' || 
         (incoming().role == 'SUPER_ADMIN' && request.auth.token.email == 'admin@bpn.go.id')
-      );
+      ));
       allow update: if isAdmin() || (isSignedIn() && request.auth.uid == uid && (incoming().role == resource.data.role || (incoming().role == 'SUPER_ADMIN' && request.auth.token.email == 'admin@bpn.go.id')));
       allow delete: if isAdmin() && resource.data.role != 'SUPER_ADMIN';
+    }
+
+    match /locations/{locationId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }

@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
   { title: "Warkah", icon: Files, id: "warkah" },
   { title: "Peminjaman", icon: Database, id: "loans" },
   { title: "Pengguna", icon: Users, id: "users" },
+  { title: "Wilayah", icon: Map, id: "locations" },
 ];
 
 interface ShellProps {
@@ -42,7 +43,7 @@ export function Shell({ children, activeId, onNavigate, user, onLogout }: ShellP
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const filteredNavItems = navItems.filter(item => {
-    if (item.id === 'users') {
+    if (item.id === 'users' || item.id === 'locations') {
       return user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
     }
     return true;

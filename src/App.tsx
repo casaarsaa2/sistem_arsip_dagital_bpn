@@ -9,6 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import { ArchiveList } from './pages/ArchiveList';
 import { LoanList } from './pages/LoanList';
 import { UserManagement } from './pages/UserManagement';
+import { LocationManagement } from './pages/LocationManagement';
 import { Login } from './components/auth/Login';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from './lib/auth';
@@ -44,6 +45,8 @@ export default function App() {
         return <LoanList />;
       case 'users':
         return <UserManagement />;
+      case 'locations':
+        return <LocationManagement />;
       default:
         return <Dashboard />;
     }

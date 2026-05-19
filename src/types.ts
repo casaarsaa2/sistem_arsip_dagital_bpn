@@ -3,6 +3,13 @@ export type LoanStatus = 'Active' | 'Returned';
 export type ArchiveStatus = 'Available' | 'Borrowed';
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'PETUGAS_ARSIP';
 
+export interface Location {
+  id: string; // usually name
+  name: string;
+  type: 'KECAMATAN' | 'KELURAHAN';
+  parentId?: string; // id of Kecamatan if it's a Kelurahan
+}
+
 export interface User {
   uid: string;
   email: string;

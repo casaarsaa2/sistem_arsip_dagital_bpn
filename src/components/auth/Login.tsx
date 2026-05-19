@@ -53,9 +53,41 @@ export function Login() {
     }
 
     try {
-      const finalEmail = email === 'admin' ? 'admin@bpn.go.id' : email;
-      await login(finalEmail, password);
-      toast.success("Login berhasil");
+      const finalEmail = email.includes('@') ? email : `${email}@bpn.go.id`;
+      
+      try {
+        await login(finalEmail, password);
+        toast.success("Login berhasil");
+      } catch (authError: any) {
+        // If user not found, check if it's a pre-created profile
+        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+          const { db, auth: firebaseAuth } = await (await import("@/src/lib/firebase")).getFirebase();
+          if (db && firebaseAuth) {
+            const { getDoc, doc } = await import('firebase/firestore');
+            const sanitizedId = email.replace(/[^a-zA-Z0-9]/g, '_');
+            const preProfileSnap = await getDoc(doc(db, 'users', sanitizedId));
+            
+            if (preProfileSnap.exists()) {
+              const preData = preProfileSnap.data();
+              // Verify temp password
+              if (preData.tempPassword === password) {
+                // Auto-register this user
+                const { createUserWithEmailAndPassword, updateProfile } = await import("firebase/auth");
+                const userCred = await createUserWithEmailAndPassword(firebaseAuth, finalEmail, password);
+                
+                if (preData.displayName) {
+                  await updateProfile(userCred.user, { displayName: preData.displayName });
+                }
+                
+                // The auth state listener in App.tsx will handle the rest (copying to UID doc)
+                toast.success("Akun diaktifkan. Selamat datang.");
+                return;
+              }
+            }
+          }
+        }
+        throw authError; // Re-throw if not a pre-profile match
+      }
     } catch (error: any) {
       console.error(error);
       let message = "Otentikasi Gagal";
@@ -117,12 +149,12 @@ export function Login() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">ID Pengguna / Email</label>
+              <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">ID Pengguna</label>
               <div className="relative">
                 <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input 
                   type="text"
-                  placeholder="admin atau email" 
+                  placeholder="Masukkan ID Petugas..." 
                   className="pl-9 h-11 bg-slate-50 border-slate-200 rounded text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:border-blue-600 font-medium"
                   required
                   value={email}
@@ -154,21 +186,6 @@ export function Login() {
               {isLoading ? "Memproses..." : isRegistering ? "Daftar Akun" : "Masuk Sistem"}
             </Button>
           </form>
-
-          <div className="mt-4 text-center space-y-2">
-            <button 
-              type="button"
-              className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider block w-full"
-              onClick={() => setIsRegistering(!isRegistering)}
-            >
-              {isRegistering ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar"}
-            </button>
-            {!isRegistering && (
-              <p className="text-[9px] text-slate-400 font-medium">
-                Catatan: Akun simulasi sebelumnya tidak berlaku. Silahkan daftar akun baru.
-              </p>
-            )}
-          </div>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-[8px] text-slate-400 uppercase tracking-widest font-bold">
