@@ -12,6 +12,9 @@ export async function getFirebase() {
 
   try {
     const response = await fetch('/firebase-applet-config.json');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Firebase config: ${response.status} ${response.statusText}`);
+    }
     const config = await response.json();
     
     firebaseApp = getApps().length === 0 ? initializeApp(config) : getApp();
